@@ -32,8 +32,20 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.GZIPOutputStream;
+
+import javax.print.attribute.URISyntax;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.drafts.Draft;
+import org.java_websocket.drafts.Draft_6455;
+import org.java_websocket.framing.Framedata;
+import org.java_websocket.handshake.ServerHandshake;
+
 
 /**
  * Receives LIDAR points from the {@link LidarServer}, stores a set number of
@@ -45,6 +57,51 @@ import java.util.Map;
  * @see doICP()
  * @see getTowerPosition()
  */
+
+class WSClient extends WebSocketClient
+{
+    private Boolean isOpen;
+    public WSClient() throws URISyntaxException
+    {
+        super(new URI("ws://192.168.1.10:5080/webapi/_publish_"));
+        isOpen = false;
+    }
+
+    @Override
+    public void onOpen(ServerHandshake handshakedata)
+    {
+        Logger.info("WebSocket open");
+        isOpen = true;
+    }
+
+    @Override
+    public void onClose(int code,  String reason, boolean remote)
+    {
+        Logger.info("WebSocket close");
+        isOpen = false;
+    }
+
+    @Override
+    public void onError(Exception ex)
+    {
+        Logger.exception(ex);
+    }
+
+    @Override
+    public void onMessage(String message)
+    {
+        // Logger.info("WebSocket message "  + message);
+    }
+
+    public void send(LidarScan scan)
+    {
+        if(isOpen)
+        {
+            this.send(scan.toJsonString());
+        }
+    }
+}
+
 public class LidarProcessor implements Loop 
 {
     enum OperatingMode
@@ -66,6 +123,7 @@ public class LidarProcessor implements Loop
     private LinkedBlockingQueue<LidarScan> mScanQueue;
     private LidarScan mActiveScan;
     private final OperatingMode mMode = OperatingMode.kRelative;
+    private WSClient mWSClient;
 
     // A scan is a collection of lidar points.  The scan, itself,
     // has a timestamp as does each point.  Currently, the timestamp
@@ -103,8 +161,11 @@ public class LidarProcessor implements Loop
         mScanTimeAccum = 0;
         mScanCount = 0;
         mActiveScan = null;
+
         try 
         {
+            mWSClient = new WSClient();
+            mWSClient.connect();
             if(sDebugPoints)
             {
                 mDataLogFile = new DataOutputStream(newLogFile());
@@ -112,6 +173,10 @@ public class LidarProcessor implements Loop
             }
         } 
         catch (IOException e) 
+        {
+            Logger.exception(e);
+        }
+        catch(URISyntaxException e)
         {
             Logger.exception(e);
         }
@@ -162,6 +227,8 @@ public class LidarProcessor implements Loop
                 mScanCount++;
                 mLastScanTime = scanTime;
                 this.processLidarScan(scan);
+                if(mWSClient != null)
+                    mWSClient.send(scan);
             }
             catch(InterruptedException ie)
             {

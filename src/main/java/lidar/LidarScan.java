@@ -3,6 +3,7 @@ package lidar;
 import lib.Constants;
 import icp.Point;
 import lib.util.Logger;
+import java.text.NumberFormat;
 
 import java.util.ArrayList;
 
@@ -21,12 +22,18 @@ class LidarScan
 
     public String toJsonString() 
     {
-        String json = "{\"timestamp\": " + mTimestamp + ", \"scan\": [";
+        String json = "{\"class\":\"lidarscan\"" + 
+                    ", \"timestamp\": " + mTimestamp + 
+                    ", \"ptsXY\": [";
+        int i = 0;
+        NumberFormat fmt = NumberFormat.getInstance();
         for (Point point : mPoints)
         {
-            json += "{\"x\":" + point.x + ", \"y\":" + point.y + "},";
+            // json += "{\"x\":" + point.x + ", \"y\":" + point.y + "},";
+            if(i++ > 0)
+                json += ",";
+            json += String.format("[%.3f,%.3f]", point.x, point.y);
         }
-        json = json.substring(0, json.length() - 1);
         json += "]}";
         return json;
     }
