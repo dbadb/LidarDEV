@@ -24,7 +24,7 @@ class LidarScan
     {
         String json = "{\"class\":\"lidarscan\"" + 
                     ", \"timestamp\": " + mTimestamp + 
-                    ", \"ptsXY\": [";
+                    ", \"pt2list\": [";
         int i = 0;
         NumberFormat fmt = NumberFormat.getInstance();
         for (Point point : mPoints)
