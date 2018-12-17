@@ -63,7 +63,8 @@ class WSClient extends WebSocketClient
     private Boolean isOpen;
     public WSClient() throws URISyntaxException
     {
-        super(new URI("ws://192.168.1.10:5080/webapi/_publish_"));
+        //super(new URI("ws://192.168.1.10:5080/webapi/_publish_"));
+        super(new URI("ws://localhost:5080/webapi/_publish_"));
         isOpen = false;
     }
 
@@ -104,6 +105,12 @@ class WSClient extends WebSocketClient
 
 public class LidarProcessor implements Loop 
 {
+    public enum RunMode
+    {
+        kRunInRobot,
+        kRunAsTest
+    };
+
     enum OperatingMode
     {
         kRelative,
@@ -148,7 +155,7 @@ public class LidarProcessor implements Loop
         }
     };
 
-    public LidarProcessor() 
+    public LidarProcessor(RunMode runMode) 
     {
         Logger.debug("LidarProcessor starting...");
         mICP = new ICP(100);
@@ -164,8 +171,11 @@ public class LidarProcessor implements Loop
 
         try 
         {
-            mWSClient = new WSClient();
-            mWSClient.connect();
+            if(runMode == RunMode.kRunAsTest)
+            {
+                mWSClient = new WSClient();
+                mWSClient.connect();
+            }
             if(sDebugPoints)
             {
                 mDataLogFile = new DataOutputStream(newLogFile());

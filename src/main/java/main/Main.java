@@ -8,6 +8,7 @@ import lib.util.InterpolatingTreeMap;
 import lib.util.Logger;
 import lib.math.Pose2d;
 import lidar.LidarProcessor;
+import lidar.LidarProcessor.RunMode;
 
 public class Main
 {
@@ -22,7 +23,7 @@ public class Main
         Logger.setVerbosity("DEBUG");
 
         mLooper = new Looper();
-        mLidarProcessor = new LidarProcessor();
+        mLidarProcessor = new LidarProcessor(RunMode.kRunAsTest);
         mLooper.register(mLidarProcessor);
         boolean started = mLidarProcessor.isConnected();
         if(!started)
